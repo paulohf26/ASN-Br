@@ -59,7 +59,7 @@ def carregar_asn_prefixos(caminho):
                 "Quantidade_Prefixos_v4": qpv4,
                 "Quantidade_Enderecos_v4":qipv4,
                 "prefixos_v6": prefixos_v6,
-                "Quantiadde_Prefixos_v6":qpv6,
+                "Quantidade_Prefixos_v6":qpv6,
                 "Quantidade_Prefixos_v6_64":qpv6_64
             })
 
@@ -92,6 +92,7 @@ def plot2(dfrm):
             x='LabelGraph',
             y='Quantidade_Enderecos_v4',
             data=df_top20_v4_ordenado,
+            hue='Quantidade_Enderecos_v4',
             palette='viridis' # Esquema de cores
     )
 
@@ -117,6 +118,7 @@ def plot3(dfrm):
             x='LabelGraph',
             y='Quantidade_Prefixos_v6_64',
             data=df_top20_v6_ordenado,
+            hue='Quantidade_Prefixos_v6_64',
             palette='viridis' # Esquema de cores
     )
 
@@ -131,6 +133,82 @@ def plot3(dfrm):
     plt.tight_layout()
     plt.savefig('meu_grafico_plot3.svg',dpi=600,bbox_inches='tight')
 
+def plot4(dfrm):
+    
+    df_CNPJ = dfrm.groupby("cnpj").agg(
+            asn_count=("asn","nunique"),
+            qpIPv4=("Quantidade_Prefixos_v4","sum"),
+            qpIPv6=("Quantidade_Prefixos_v6","sum"),
+            ).reset_index()
+    df_CNPJ = df_CNPJ.sort_values("asn_count",ascending=False)
+    df_CNPJ = df_CNPJ.nlargest(20,'asn_count')
+
+    df_CNPJ = df_CNPJ.merge(
+            dfrm[['cnpj','nome']].drop_duplicates('cnpj'),
+            on="cnpj",
+            how="left"
+            )
+
+    print(df_CNPJ)
+
+    plt.figure(figsize=(12, 8))
+    ax = sns.barplot(
+            x='nome',
+            y='asn_count',
+            data=df_CNPJ,
+            hue='asn_count',
+            palette='viridis' # Esquema de cores
+    )
+    
+    plt.title('Top 20 CNPJs pela Quantidade de ASNs', fontsize=16)
+    plt.xlabel('CNPJ', fontsize=10)
+    plt.ylabel('Contagem de ASNs', fontsize=12)
+    plt.xticks(rotation=45, ha='right') # Rotaciona rótulos para melhor leitura
+    
+    for i,valor in enumerate(df_CNPJ['asn_count']):
+        plt.text(i,valor+1,"{:.0f}".format(valor),ha='center',rotation=90,va='bottom',size=8)
+    
+    plt.tight_layout()
+    plt.savefig('meu_grafico_plot4.svg',dpi=600,bbox_inches='tight')
+
+def plot5(dfrm):
+    
+    df_CNPJ = dfrm.groupby("cnpj").agg(
+            qpIPv4=("Quantidade_Enderecos_v4","sum"),
+            ).reset_index()
+    df_CNPJ = df_CNPJ.sort_values("qpIPv4",ascending=False)
+    df_CNPJ['qpIPv4'] = df_CNPJ['qpIPv4'] / 1000000
+    df_CNPJ = df_CNPJ.nlargest(20,'qpIPv4')
+
+    df_CNPJ = df_CNPJ.merge(
+            dfrm[['cnpj','nome']].drop_duplicates('cnpj'),
+            on="cnpj",
+            how="left"
+            )
+
+    print(df_CNPJ)
+
+    plt.figure(figsize=(12, 8))
+    ax = sns.barplot(
+            x='nome',
+            y='qpIPv4',
+            data=df_CNPJ,
+            hue='qpIPv4',
+            palette='viridis' # Esquema de cores
+    )
+    
+    plt.title('Top 20 CNPJs pela Quantidade de Enderecos IPv4\nMilhões', fontsize=16)
+    plt.xlabel('CNPJ', fontsize=10)
+    plt.ylabel('Quantidade de Endereços IPv4', fontsize=12)
+    plt.xticks(rotation=45, ha='right') # Rotaciona rótulos para melhor leitura
+    
+    for i,valor in enumerate(df_CNPJ['qpIPv4']):
+        plt.text(i,valor+1,"{:.2f}".format(valor),ha='center',rotation=90,va='bottom',size=8)
+    
+    plt.tight_layout()
+    plt.savefig('meu_grafico_plot5.svg',dpi=600,bbox_inches='tight')
+
+
 
 if __name__ == "__main__":
     print("Iniciando execução...")
@@ -138,6 +216,6 @@ if __name__ == "__main__":
 
     df = carregar_asn_prefixos(asnBase)
     #print(df)
-    plot3(df)
+    plot5(df)
 
     print("Finalizando execução.")
